@@ -15,11 +15,6 @@ class Reader extends AbstractBase
     private $headers = false;
 
     /**
-     * @var int
-     */
-    private $line;
-
-    /**
      * @var
      */
     private $init;
@@ -28,7 +23,7 @@ class Reader extends AbstractBase
      * @var bool
      */
     private $headerLine = false;
-    
+
     /**
      * @var bool
      */
@@ -62,16 +57,18 @@ class Reader extends AbstractBase
     public function getRow()
     {
         $this->init();
-        if ($this->handle->eof()) {
+        if ($this->isEof()) {
             return false;
         }
 
-        $row = $this->handle->fgetcsv($this->delimiter, $this->enclosure);
+        $row = $this->getCurrentRow();
         $isEmpty = $this->rowIsEmpty($row);
 
-        if ($row !== false && $row != null && $isEmpty === false) {
-            $this->line++;
+        if ($this->isEof() === false) {
+            $this->handle->next();
+        }
 
+        if ($row !== false && $row != null && $isEmpty === false) {
             return $this->headers ? array_combine($this->headers, $row) : $row;
         } elseif ($isEmpty) {
             // empty row, transparently try the next row
@@ -79,6 +76,14 @@ class Reader extends AbstractBase
         } else {
             return false;
         }
+    }
+
+    /**
+     * @return bool
+     */
+    public function isEof()
+    {
+        return $this->handle->eof();
     }
 
     /**
@@ -138,7 +143,11 @@ class Reader extends AbstractBase
             throw new \LogicException("Line Number $lineNumber is equal to the header line that was set");
         }
 
-        $this->line = $lineNumber;
+        if ($lineNumber > 0) $this->handle->seek($lineNumber - 1); // check the line before
+
+        if ($this->isEof()) {
+            throw new \LogicException("Line Number $lineNumber is past the end of the file");
+        }
 
         $this->handle->seek($lineNumber);
     }
@@ -156,11 +165,10 @@ class Reader extends AbstractBase
 
         $this->headerLine = $lineNumber;
 
-        // seek to line before headers
         $this->handle->seek($lineNumber);
 
         // get headers
-        $this->headers = $this->getCurrentRow();
+        $this->headers = $this->getRow();
     }
 
     protected function init()
@@ -172,6 +180,8 @@ class Reader extends AbstractBase
 
         if ($this->headersInFirstRow === true) {
             $this->handle->rewind();
+
+            $this->headerLine = 0;
 
             $this->headers = $this->getRow();
         }
