@@ -20,12 +20,12 @@ class Reader extends AbstractBase
     private $init;
 
     /**
-     * @var bool
+     * @var bool|int
      */
     private $headerLine = false;
 
     /**
-     * @var bool
+     * @var bool|int
      */
     private $lastLine = false;
 
@@ -38,7 +38,6 @@ class Reader extends AbstractBase
     {
         parent::__construct($path, $mode);
         $this->headersInFirstRow = $headersInFirstRow;
-        $this->line = 0;
     }
 
     /**
@@ -69,7 +68,7 @@ class Reader extends AbstractBase
         }
 
         if ($row !== false && $row != null && $isEmpty === false) {
-            return $this->headers ? array_combine($this->headers, $row) : $row;
+            return $this->headers && isset($this->headers[0]) ? array_combine($this->headers, $row) : $row;
         } elseif ($isEmpty) {
             // empty row, transparently try the next row
             return $this->getRow();
