@@ -67,7 +67,7 @@ class Reader extends AbstractBase
             $this->handle->next();
         }
 
-        if ($row !== false && $row != null && $isEmpty === false) {
+        if ($isEmpty === false) {
             return ($this->headers && is_array($this->headers)) ? array_combine($this->headers, $row) : $row;
         } elseif ($isEmpty) {
             // empty row, transparently try the next row
